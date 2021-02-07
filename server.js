@@ -25,7 +25,6 @@ connection.connect((err) => {
 
 const runApp = () => {
 
-    const runSearch = () => {
         inquirer
             .prompt({
                 name: 'start',
@@ -114,7 +113,6 @@ const runApp = () => {
                 }
 
             });
-    };
 
 }
 
