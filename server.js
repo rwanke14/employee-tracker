@@ -40,6 +40,7 @@ const runApp = () => {
                 'Add an employee.',
                 'View all departments.',
                 'View all roles.',
+                'View employees',
                 'View all employees.',
                 'Update employee roles.',
                 'Update employee manager.',
@@ -75,9 +76,13 @@ const runApp = () => {
                 case 'View all roles.':
                     viewRoles()
                     break;
+                
+                case 'View employees':
+                    viewEmployees()
+                    break;
 
                 case 'View all employees.':
-                    viewEmployees()
+                    viewAllEmployees 
                     break;
 
                 case 'Update employee roles.':
@@ -263,6 +268,18 @@ const viewRoles = () => {
 }
 
 const viewEmployees = () => {
+
+    connection.query(
+        'SELECT first_name, last_name FROM employee',
+        (err, res) => {
+            if (err) throw err;
+            console.table(res)
+        });
+    runApp();
+}
+
+
+const viewAllEmployees = () => {
     let query = 
         'SELECT employee.id, employee.first_name, employee.last_name, roles.title, departments.department AS department, roles.salary'
     query += 
