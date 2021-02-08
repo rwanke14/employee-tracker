@@ -1,5 +1,6 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
+const cTable = require('console.table')
 
 
 const port = 3306
@@ -56,15 +57,15 @@ const runApp = () => {
 
                 case 'Add a deparment.':
                     console.log('department')
-                    addDepartment()
+                    addDepartment(Adddata)
                     break;
 
                 case 'Add a role.':
-                    addRole()
+                    addRole(Adddata)
                     break;
 
                 case 'Add an employee.':
-                    addEmployee()
+                    addEmployee(Adddata)
                     break;
 
                 case 'View all departments.':
@@ -76,7 +77,7 @@ const runApp = () => {
                     break;
 
                 case 'View all employees.':
-                    viewEmployee()
+                    viewEmployees()
                     break;
 
                 case 'Update employee roles.':
@@ -125,26 +126,22 @@ const addDepartment = () => {
 
     inquirer
         .prompt({
-            name: 'newdepartment',
+            name: 'department',
             type: 'input',
             message: 'What is the department name?',
         })
         .then((answer) => {
-            // const newDepartment = answer.newdepartment
-            const query = 'INSERT INTO departments VALUES ?';
-            const newDepartment = answer.newdepartment
-            connection.query(query, [newDepartment], (err, res) => {
-                //console.log(newDepartment)
-                console.log(res)
+            const query = connection.query('INSERT INTO departments SET ?',
+                {
+                    department: answer.department,
+                },
+                (err, res) => {
+                    if (err) throw err;
 
-                res.forEach(({ department }) => {
-                    console.log(
-                        `Department: ${department}`
-                    );
+                    console.table(res)
+
+                    runApp();
                 });
-
-                runApp();
-            });
         });
 
 }
@@ -153,23 +150,37 @@ const addDepartment = () => {
 const addRole = () => {
 
     inquirer
-        .prompt({
-            name: 'newRole',
-            type: 'input',
-            message: 'What is the name of the role?',
-        })
+        .prompt([
+            {
+                name: 'title',
+                type: 'input',
+                message: 'What is the title for this role?',
+            },
+            {
+                name: 'salary',
+                type: 'input',
+                message: 'What is the salary for this role?',
+            },
+            {
+                name: 'departmentid',
+                type: 'input',
+                message: 'What is the department id for this role?',
+            }
+        ])
         .then((answer) => {
-            const query =
-                'INSERT INTO roles (title) VALUES ?';
-            connection.query(query, [answer.newRole], (err, res) => {
-                res.forEach(({ title }) => {
-                    console.log(
-                        `Department: ${title}`
-                    );
-                });
+            const query = connection.query('INSERT INTO roles SET ?',
+                {
+                    title: answer.title,
+                    salary: answer.salary,
+                    department_id: answer.departmentid,
+                },
+                (err, res) => {
+                    if (err) throw err;
 
-                runApp();
-            });
+                    console.table(res)
+
+                    runApp();
+                });
         });
 
 
@@ -191,32 +202,37 @@ const addEmployee = () => {
                 message: "What is the employee's last name?",
             },
             {
-                name: 'roleid',
-                type: 'input',
-                message: "What is the employee's role id?",
+                name: 'role',
+                type: 'list',
+                message: "What is the employee's role?",
+                choices
             },
             {
-                name: 'managerid',
-                type: 'input',
-                message: "If the employee is a manager, what is their id?",
+                name: 'manager',
+                type: 'list',
+                message: "Who is the employee's manager?",
             }
         ])
         .then((answer) => {
-            const query =
-                'INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ?';
-            const firstName = answer.firstName;
-            const lastName = answer.lastname;
-            const roleId = answer.roleid;
-            const managerId = answer.managerid;
-            connection.query(query, [firstName, lastName, roleId, managerId], (err, res) => {
-                res.forEach(({ first_name, last_name, role_id, manager_id }) => {
-                    console.log(
-                        `First Name: ${first_name} || Last Name: ${last_name} || Role ID: ${role_id} || Manager ID: ${manager_id}`
-                    );
-                });
 
-                runApp();
-            });
+            const query = connection.query('INSERT INTO employee SET ?',
+                {
+                    first_name: answer.firstname,
+                    last_name: answer.lastname,
+                    role_id: answer.roleid,
+                    manager_id: answer.managerid
+                },
+                (err, res) => {
+                    if (err) throw err;
+                    //console.table(res)
+                    res.forEach(({ title, salary, department_id }) => {
+                        console.table(
+                            `Position: ${title} || Salary: ${salary} || Department ID: ${department_id}`
+                        );
+                    });
+                    
+                    runApp();
+                });
         });
 
 }
@@ -226,14 +242,11 @@ const viewDepartment = () => {
     connection.query(
         'SELECT department FROM departments',
         (err, res) => {
-            res.forEach(({ department }) => {
-                console.log(
-                    `Department: ${department}`
-                );
-            });
+            if (err) throw err;
+            console.table(res)
         }
-    
-    
+
+
     );
 
 }
@@ -241,35 +254,114 @@ const viewDepartment = () => {
 const viewRoles = () => {
 
     connection.query(
-        'SELECT title, salary, department_id FROM roles', 
+        'SELECT title, salary, department_id FROM roles',
         (err, res) => {
             if (err) throw err;
-            console.log(res)
-            res.forEach(({ title, salary, department_id }) => {
-                console.log(
-                    `Position: ${title} || Salary: ${salary} || Department ID: ${department_id}`
-                );
-            });
+            console.table(res)
         });
     runApp();
 }
 
-const viewEmployee = () => {
-
+const viewEmployees = () => {
+    let query = 
+        'SELECT employee.id, employee.first_name, employee.last_name, roles.title, departments.department AS department, roles.salary'
+    query += 
+        'FROM employee LEFT JOIN roles ON employee.role_id = role.id' //Roles connect to Role ID //Manager connects to managerID
+    query += 
+        'LEFT JOIN departments ON roles.department_id = departments.id' //Roles connect to department ID
     connection.query(
-        'SELECT first_name, last_name, role_id, manager_id FROM employee',
-        (err, res) => {
+        query, (err, res) => {
             if (err) throw err;
-            console.log(res)
-            res.forEach(({ first_name, last_name, role_id, manager_id }) => {
-                console.log(
-                    `First Name: ${first_name} || Last Name: ${last_name} || Role ID: ${role_id} || Manager ID: ${manager_id}`
-                );
-            });
+
+            console.table(res)
+            
         }
     );
+
+    runApp();
 }
-// updateRole()
+
+
+const updateRole = () => {
+    connection.query ('SELECT * FROM roles', (err, res) => {
+        if (err) throw err;
+        inquirer
+        .prompt([
+            {
+                name: 'selectrole',
+                type: 'rawlist',
+                message: "Which role would you like to change?",
+                choices() {
+                    const roleArray = [];
+                    res.forEach(({ title, salary, department_id }) => {
+                        roleArray.push(title, salary, department_id);
+                    });
+                    return roleArray;
+                }
+            },
+        ])
+        .then((answer) => {
+           
+
+            inquirer
+            .prompt([
+                {
+                    name: 'selectrole',
+                    type: 'rawlist',
+                    message: "Which role would you like to change?",
+                    choices() {
+                        const roleArray = [];
+                        res.forEach(({ title, salary, department_id }) => {
+                            roleArray.push(title, salary, department_id);
+                        });
+                        return roleArray;
+                    }
+                },
+            ])
+            .then((answer) => {
+               
+    
+                
+    
+    
+    
+                
+    
+            
+    
+            })
+
+
+
+            
+
+        
+
+        })
+
+    })
+   
+
+}
+
+// const query = connection.query(
+//                 'UPDATE roles SET ? WHERE ?',
+//                 [
+//                     {
+//                         quantity: 100,
+//                     },
+//                     {
+//                         flavor: 'Rocky Road',
+//                     },
+//                 ],
+//                 (err, res) => {
+//                     if (err) throw err;
+//                     console.log(`${res.affectedRows} products updated!\n`);
+//                     // Call deleteProduct AFTER the UPDATE completes
+//                     deleteProduct();
+//                 }
+//             );
+
 // updateManager()
 // viewManager()
 // deleteDepartment()
