@@ -82,7 +82,7 @@ const runApp = () => {
                     break;
 
                 case 'View all employees.':
-                    viewAllEmployees 
+                    viewAllEmployees ()
                     break;
 
                 case 'Update employee roles.':
@@ -245,10 +245,11 @@ const addEmployee = () => {
 const viewDepartment = () => {
 
     connection.query(
-        'SELECT department FROM departments',
+        'SELECT department FROM departments ORDER BY departments.id',
         (err, res) => {
             if (err) throw err;
             console.table(res)
+            runApp();
         }
 
 
@@ -263,39 +264,42 @@ const viewRoles = () => {
         (err, res) => {
             if (err) throw err;
             console.table(res)
+            runApp();
         });
-    runApp();
 }
 
+//This is just a list of the employees table, not a full list.
 const viewEmployees = () => {
 
     connection.query(
-        'SELECT first_name, last_name FROM employee',
+        'SELECT first_name, last_name, role_id, manager_id FROM employee',
         (err, res) => {
             if (err) throw err;
             console.table(res)
+            runApp();
         });
-    runApp();
 }
 
-
+//This is a full employee list joining all three tables.
 const viewAllEmployees = () => {
+
     let query = 
-        'SELECT employee.id, employee.first_name, employee.last_name, roles.title, departments.department AS department, roles.salary'
+        'SELECT employee.id, employee.first_name, employee.last_name, roles.title AS department, roles.salary ';
     query += 
-        'FROM employee LEFT JOIN roles ON employee.role_id = role.id' //Roles connect to Role ID //Manager connects to managerID
+        'FROM employee INNER JOIN roles ON (roles.id = employee.role_id ) '; //Roles connect to Role ID //Manager connects to managerID
     query += 
-        'LEFT JOIN departments ON roles.department_id = departments.id' //Roles connect to department ID
+        'INNER JOIN departments ON (departments.id = roles.department_id) '; //Roles connect to department ID
+   
     connection.query(
         query, (err, res) => {
             if (err) throw err;
-
             console.table(res)
-            
+
+            runApp();
         }
     );
 
-    runApp();
+   
 }
 
 
