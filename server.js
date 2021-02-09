@@ -76,13 +76,13 @@ const runApp = () => {
                 case 'View all roles.':
                     viewRoles()
                     break;
-                
+
                 case 'View employees':
                     viewEmployees()
                     break;
 
                 case 'View all employees.':
-                    viewAllEmployees ()
+                    viewAllEmployees()
                     break;
 
                 case 'Update employee roles.':
@@ -235,7 +235,7 @@ const addEmployee = () => {
                             `Position: ${title} || Salary: ${salary} || Department ID: ${department_id}`
                         );
                     });
-                    
+
                     runApp();
                 });
         });
@@ -280,16 +280,27 @@ const viewEmployees = () => {
         });
 }
 
+const viewEmpManger = () => {
+
+    connection.query(
+        'SELECT first_name, last_name, role_id, manager_id FROM employee',
+        (err, res) => {
+            if (err) throw err;
+            console.table(res)
+            runApp();
+        });
+}
+
 //This is a full employee list joining all three tables.
 const viewAllEmployees = () => {
 
-    let query = 
-        'SELECT employee.id, employee.first_name, employee.last_name, roles.title AS department, roles.salary ';
-    query += 
+    let query =
+        'SELECT employee.id, employee.first_name, employee.last_name, roles.title, roles.salary, departments.department ';
+    query +=
         'FROM employee INNER JOIN roles ON (roles.id = employee.role_id ) '; //Roles connect to Role ID //Manager connects to managerID
-    query += 
+    query +=
         'INNER JOIN departments ON (departments.id = roles.department_id) '; //Roles connect to department ID
-   
+
     connection.query(
         query, (err, res) => {
             if (err) throw err;
@@ -299,91 +310,95 @@ const viewAllEmployees = () => {
         }
     );
 
-   
+
 }
 
 
 const updateRole = () => {
-    connection.query ('SELECT * FROM roles', (err, res) => {
+    connection.query('SELECT * FROM employee', (err, res) => {
+        console.log(res)
         if (err) throw err;
         inquirer
-        .prompt([
-            {
-                name: 'selectrole',
-                type: 'rawlist',
-                message: "Which role would you like to change?",
-                choices() {
-                    const roleArray = [];
-                    res.forEach(({ title, salary, department_id }) => {
-                        roleArray.push(title, salary, department_id);
-                    });
-                    return roleArray;
-                }
-            },
-        ])
-        .then((answer) => {
-           
-
-            inquirer
             .prompt([
                 {
                     name: 'selectrole',
-                    type: 'rawlist',
-                    message: "Which role would you like to change?",
+                    type: 'list',
+                    message: "Which employee's role would you like to update?",
                     choices() {
                         const roleArray = [];
-                        res.forEach(({ title, salary, department_id }) => {
-                            roleArray.push(title, salary, department_id);
+                        res.forEach(({ id, first_name, last_name }) => {
+                            roleArray.push(id + '. ' + first_name + ' ' + last_name);
                         });
                         return roleArray;
                     }
                 },
             ])
             .then((answer) => {
-               
-    
-                
-    
-    
-    
-                
-    
+                console.log(answer);
+
+                let employeeId = answer.selectrole.split(".")[0]
+                console.log(employeeId)
+
+                let changeEmployee = answer.selectrole
+                connection.query('SELECT * FROM roles', (err, res) => {
+                    inquirer
+                        .prompt([
+                            {
+                                name: 'role',
+                                type: 'list',
+                                message: "What is the employee's new role?",
+                                choices() {
+                                    const roleArray = [];
+                                    res.forEach(({ id, title }) => {
+                                        roleArray.push(id + '. ' + title);
+                                    });
+                                    return roleArray;
+                                }
+                            },
+                        ])
+                        .then((answer) => {
+                        console.log(answer)
+                        let newRole = answer.role
+                        let roleId = answer.role.split(".")[0]
+                        console.log(roleId)
+                        connection.query(
+                            'UPDATE employee SET role_id=? WHERE id=?', [roleId,employeeId]
+                            //'UPDATE employee, roles SET ? WHERE employees.role_id = roles.id',
+                           //[newRole]
+                           , (err, res) => {
+                                if (err) throw err;
+                                console.table(res)
+                    
+                                runApp();
+                            }
+                        );
             
-    
+            
+                        });
+            
+                });
+
+
             })
 
-
-
-            
-
-        
-
-        })
-
     })
-   
+
 
 }
 
-// const query = connection.query(
-//                 'UPDATE roles SET ? WHERE ?',
-//                 [
-//                     {
-//                         quantity: 100,
-//                     },
-//                     {
-//                         flavor: 'Rocky Road',
-//                     },
-//                 ],
-//                 (err, res) => {
-//                     if (err) throw err;
-//                     console.log(`${res.affectedRows} products updated!\n`);
-//                     // Call deleteProduct AFTER the UPDATE completes
-//                     deleteProduct();
-//                 }
-//             );
 
 // updateManager()
+    'UPDATE employee SET manager_id=? WHERE id=?'
+    //need to select employee and new employee manager then update employee manager id
+
+
+
+
+
+
+
+
+
 // viewManager()
 // deleteDepartment()
 // deleteRole()
