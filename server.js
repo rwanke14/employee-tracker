@@ -23,6 +23,7 @@ const connection = mysql.createConnection({
 connection.connect((err) => {
 
     if (err) throw err;
+    console.log('You are connected on local host 3306')
     runApp()
 
 });
@@ -280,15 +281,21 @@ const viewEmployees = () => {
         });
 }
 
-const viewEmpManger = () => {
+
+const viewManager = () => {
+
+    let query = 
+    
 
     connection.query(
-        'SELECT first_name, last_name, role_id, manager_id FROM employee',
+        query,
         (err, res) => {
             if (err) throw err;
             console.table(res)
             runApp();
         });
+
+
 }
 
 //This is a full employee list joining all three tables.
@@ -339,7 +346,7 @@ const updateRole = () => {
                 let employeeId = answer.selectrole.split(".")[0]
                 console.log(employeeId)
 
-                let changeEmployee = answer.selectrole
+                
                 connection.query('SELECT * FROM roles', (err, res) => {
                     inquirer
                         .prompt([
@@ -357,25 +364,24 @@ const updateRole = () => {
                             },
                         ])
                         .then((answer) => {
-                        console.log(answer)
-                        let newRole = answer.role
-                        let roleId = answer.role.split(".")[0]
-                        console.log(roleId)
-                        connection.query(
-                            'UPDATE employee SET role_id=? WHERE id=?', [roleId,employeeId]
-                            //'UPDATE employee, roles SET ? WHERE employees.role_id = roles.id',
-                           //[newRole]
-                           , (err, res) => {
-                                if (err) throw err;
-                                console.table(res)
-                    
-                                runApp();
-                            }
-                        );
-            
-            
+                            console.log(answer)
+                            let newRole = answer.role
+                            let roleId = answer.role.split(".")[0]
+                            console.log(roleId)
+                            connection.query(
+                                'UPDATE employee SET role_id=? WHERE id=?', [roleId, employeeId]
+
+                                , (err, res) => {
+                                    if (err) throw err;
+                                    console.table(res)
+
+                                    runApp();
+                                }
+                            );
+
+
                         });
-            
+
                 });
 
 
@@ -387,22 +393,222 @@ const updateRole = () => {
 }
 
 
-// updateManager()
-    'UPDATE employee SET manager_id=? WHERE id=?'
-    //need to select employee and new employee manager then update employee manager id
+const updateManager = () => {
+
+    connection.query('SELECT * FROM employee', (err, res) => {
+        console.log(res)
+        if (err) throw err;
+        inquirer
+            .prompt([
+                {
+                    name: 'employee',
+                    type: 'list',
+                    message: "Which employee's manager do you want to change?",
+                    choices() {
+                        console.log('Hi!')
+                        const employArray = [];
+                        console.log(employArray)
+                        res.forEach(({ id, first_name, last_name }) => {
+                            employArray.push(id + '. ' + first_name + ' ' + last_name);
+                        });
+                        return employArray;
+                    }
+                },
+            ])
+            .then((answer) => {
+                console.log(answer);
+
+                let employId = answer.employee.split('. ')[0]
+                console.log(employId)
+
+                connection.query('SELECT * FROM employee', (err, res) => {
+                    inquirer
+                        .prompt([
+                            {
+                                name: 'manager',
+                                type: 'list',
+                                message: "Who is the employee's new manager?",
+                                choices() {
+                                    const managerArray = [];
+                                    res.forEach(({ id, first_name, last_name }) => {
+                                        managerArray.push(id + '. ' + first_name + ' ' + last_name);
+                                    });
+                                    return managerArray;
+                                }
+                            },
+                        ])
+                        .then((answer) => {
+
+                            console.log(answer)
+                            let managerId = answer.manager.split(".")[0]
+                            console.log(managerId)
+                            connection.query(
+                                'UPDATE employee SET manager_id=? WHERE id=?', [managerId, employId]
+                                , (err, res) => {
+                                    if (err) throw err;
+                                    console.table(res)
+
+                                    runApp();
+                                }
+                            );
+
+
+                        });
+
+                });
+
+            });
+
+    })
+
+
+
+}
+
+
+
+const deleteDepartment = () => {
+    connection.query('SELECT * FROM departments', (err, res) => {
+        console.log(res)
+        if (err) throw err;
+        inquirer
+            .prompt([
+                {
+                    name: 'removedepart',
+                    type: 'list',
+                    message: "Which department would you like to remove?",
+                    choices() {
+                        console.log('Hi!')
+                        const departArray = [];
+                        console.log(departArray)
+                        res.forEach(({ id, department }) => {
+                            departArray.push(id + '. ' + department);
+                        });
+                        return departArray;
+                    }
+                },
+            ])
+            .then((answer) => {
+                console.log(answer);
+
+                let departmentId = answer.removedepart.split('. ')[0]
+                console.log(departmentId)
+
+
+                connection.query('DELETE FROM departments WHERE departments.id = ? ', [departmentId], (err, res) => {
+                    if (err) throw err;
+                    console.log('Department removed successfully!')
+
+                    runApp();
+
+                });
+
+            });
+
+    })
+
+}
 
 
 
 
+const deleteRole = () => {
+
+    connection.query('SELECT * FROM roles', (err, res) => {
+        console.log(res)
+        if (err) throw err;
+        inquirer
+            .prompt([
+                {
+                    name: 'role',
+                    type: 'list',
+                    message: "Which role do you want to remove?",
+                    choices() {
+                        console.log('Hi!')
+                        const roleArray = [];
+                        console.log(roleArray)
+                        res.forEach(({ id, title }) => {
+                            roleArray.push(id + '. ' + title);
+                        });
+                        return roleArray;
+                    }
+                },
+            ])
+            .then((answer) => {
+                console.log(answer);
+
+                let roletId = answer.role.split('. ')[0]
+                console.log(roletId)
 
 
+                connection.query('DELETE FROM roles WHERE roles.id = ? ', [roletId], (err, res) => {
+                    if (err) throw err;
+                    console.log('Role removed successfully!')
+
+                    runApp();
+
+                });
+
+            });
+
+    })
 
 
+}
 
-// viewManager()
-// deleteDepartment()
-// deleteRole()
-// deleteEmployee()
+const deleteEmployee = () => {
+
+    connection.query('SELECT * FROM employee', (err, res) => {
+        console.log(res)
+        if (err) throw err;
+        inquirer
+            .prompt([
+                {
+                    name: 'employee',
+                    type: 'list',
+                    message: "Which role do you want to remove?",
+                    choices() {
+                        console.log('Hi!')
+                        const employeeArray = [];
+                        console.log(employeeArray)
+                        res.forEach(({ id, first_name, last_name }) => {
+                            employeeArray.push(id + '. ' + first_name + ' ' + last_name);
+                        });
+                        return employeeArray;
+                    }
+                },
+            ])
+            .then((answer) => {
+                console.log(answer);
+
+                let employeeId = answer.employee.split('. ')[0]
+                console.log(employeeId)
+
+
+                connection.query('DELETE FROM employee WHERE employee.id = ? ', [employeeId], (err, res) => {
+                    if (err) throw err;
+                    console.log('Employee removed successfully!')
+
+                    runApp();
+
+                });
+
+            });
+
+    })
+
+
+}
+
+
 // budget()
-// stopApp();
+
+//Stops connection and exits prompts when exit is selected. 
+
+const stopApp = () => {
+
+    connection.end()
+
+
+};
 
