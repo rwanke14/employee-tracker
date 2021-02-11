@@ -281,12 +281,22 @@ const viewEmployees = () => {
         });
 }
 
-
+//View employees by manager.
 const viewManager = () => {
-
-    let query = 
     
-
+    let query = 
+    "SELECT "
+    query +=
+    'CONCAT(m.first_name, " ",m.last_name) AS Employee, '
+    query += 
+    "CONCAT(e.first_name, ' ',e.last_name) AS Manager "
+    query +=
+    "FROM employee m LEFT JOIN employee e "
+    query += 
+    "ON m.manager_id = e.id "
+    query += 
+    "ORDER BY m.manager_id "
+    
     connection.query(
         query,
         (err, res) => {
