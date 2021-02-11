@@ -48,8 +48,8 @@ const runApp = () => {
                 'View employee by manager.',
                 'Delete a department.',
                 'Delete a role.',
-                'Delete an employee',
-                'View the total utilized budget of a department',
+                'Delete an employee.',
+                'View Deparment Budgets.',
                 'Exit'
             ],
         })
@@ -58,7 +58,6 @@ const runApp = () => {
             switch (todo) {
 
                 case 'Add a deparment.':
-                    console.log('department')
                     addDepartment()
                     break;
 
@@ -259,11 +258,10 @@ const addEmployee = () => {
                                 },
                                 (err, res) => {
                                     if (err) throw err;
-                                    
-                                    //console.table(res)
-                                    // res.forEach(({ title, salary, department_id }) => {
+
+
                                     console.log("\x1b[32m", 'Employee added!');
-                                    // });
+
 
                                     runApp();
                                 });
