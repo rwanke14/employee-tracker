@@ -1,10 +1,12 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const cTable = require('console.table')
+
+//Used for adding color and heading to application in terminal.
 var figlet = require('figlet');
 const chalk = require('chalk');
 
-
+//Setting up Employee Tracker header with figlet.
 figlet.text('Employee Tracker', 
 function(err, data) {
     if (err) {
@@ -18,6 +20,7 @@ function(err, data) {
 
 const port = 3306
 
+//Connects to mysql database.
 const connection = mysql.createConnection({
     host: 'localhost',
 
@@ -34,7 +37,7 @@ const connection = mysql.createConnection({
 });
 
  
-
+//Creates connection to database.
 connection.connect((err) => {
 
     if (err) throw err;
@@ -44,6 +47,7 @@ connection.connect((err) => {
 
 });
 
+//This function starts the application and runs the prompts to select what you want to do with your database. Switch statement takes you to the function for the selected action.
 const runApp = () => {
 
     inquirer
@@ -121,11 +125,11 @@ const runApp = () => {
                     deleteRole()
                     break;
 
-                case 'Delete an employee':
+                case 'Delete an employee.':
                     deleteEmployee()
                     break;
 
-                case 'View the total utilized budget of a department':
+                case 'View Deparment Budgets.':
                     budget()
                     break;
 
@@ -143,6 +147,8 @@ const runApp = () => {
 }
 
 
+
+//Function to create department.
 const addDepartment = () => {
 
     inquirer
@@ -152,6 +158,8 @@ const addDepartment = () => {
             message: 'What is the department name?',
         })
         .then((answer) => {
+
+            //Insert new department into the departments table.
             const query = connection.query('INSERT INTO departments SET ?',
                 {
                     department: answer.department,
@@ -167,7 +175,7 @@ const addDepartment = () => {
 
 }
 
-
+//Function to add role to database.
 const addRole = () => {
 
     inquirer
@@ -189,6 +197,8 @@ const addRole = () => {
             }
         ])
         .then((answer) => {
+
+            //Insert new role into roles table along with department id.
             connection.query('INSERT INTO roles SET ?',
                 {
                     title: answer.title,
@@ -209,9 +219,10 @@ const addRole = () => {
 
 
 
-
+//Function to add employee to database.
 const addEmployee = () => {
 
+    //Select list of roles from roles table.
     connection.query('SELECT * FROM roles', (err, res) => {
         inquirer
             .prompt([
@@ -244,6 +255,7 @@ const addEmployee = () => {
                 const fName = answer.firstname
                 const lName = answer.lastname
 
+                //Select list of employees to assign manager from employee table.
                 connection.query('SELECT * FROM employee', (err, res) => {
                     inquirer
                         .prompt([
@@ -265,6 +277,7 @@ const addEmployee = () => {
 
                             const managerId = answer.manager.split('. ')[0]
 
+                            //Insert new employee into the employee table and assign their manager.
                             connection.query('INSERT INTO employee SET ?',
                                 {
                                     first_name: fName,
@@ -288,8 +301,11 @@ const addEmployee = () => {
     })
 }
 
+
+//Function to view all departments in the departments table.
 const viewDepartment = () => {
 
+    //Selects the departments table with all columns.
     connection.query(
         'SELECT department FROM departments ORDER BY departments.id',
         (err, res) => {
@@ -303,8 +319,12 @@ const viewDepartment = () => {
 
 }
 
+
+
+//Function to view all roles in the roles table.
 const viewRoles = () => {
 
+    //Selects the roles table with all columns.
     connection.query(
         'SELECT title, salary, department_id FROM roles',
         (err, res) => {
@@ -314,7 +334,7 @@ const viewRoles = () => {
         });
 }
 
-//This is just a list of the employees table, not a full list.
+//This is just a list of the employees table, not a full list joined with the other tables.
 const viewEmployees = () => {
 
     connection.query(
@@ -326,9 +346,11 @@ const viewEmployees = () => {
         });
 }
 
-//View employees by manager.
+//View employees by manager, joining within the employee table to show each employee and their managers name.
 const viewManager = () => {
 
+    //Query concats the first name and last name and sets one column for employee and one for manager.
+    //A left join is used to join with in the employee table using the manager id and employee id and then ordered by manager.
     let query =
         "SELECT "
     query +=
@@ -353,15 +375,16 @@ const viewManager = () => {
 
 }
 
-//This is a full employee list joining all three tables.
+//This is a full employee list joining all three tables to show the employee, their title, salary and department.
 const viewAllEmployees = () => {
 
+    //Query selects the columns needed, joins the employee table to the roles table via the role id and then joins the department table via the department id.
     let query =
         'SELECT employee.id, employee.first_name, employee.last_name, roles.title, roles.salary, departments.department ';
     query +=
-        'FROM employee INNER JOIN roles ON (roles.id = employee.role_id ) '; //Roles connect to Role ID //Manager connects to managerID
+        'FROM employee INNER JOIN roles ON (roles.id = employee.role_id ) '; 
     query +=
-        'INNER JOIN departments ON (departments.id = roles.department_id) '; //Roles connect to department ID
+        'INNER JOIN departments ON (departments.id = roles.department_id) '; 
 
     connection.query(
         query, (err, res) => {
@@ -375,10 +398,12 @@ const viewAllEmployees = () => {
 
 }
 
-
+//This function updates an employees role by selecting the employee and then the new role and updating the database.
 const updateRole = () => {
+
+    //Select employee list from database.
     connection.query('SELECT * FROM employee', (err, res) => {
-        console.log(res)
+        
         if (err) throw err;
         inquirer
             .prompt([
@@ -396,12 +421,12 @@ const updateRole = () => {
                 },
             ])
             .then((answer) => {
-                console.log(answer);
+                
 
                 let employeeId = answer.selectrole.split(".")[0]
-                console.log(employeeId)
+               
 
-
+                //Select list of roles from database.
                 connection.query('SELECT * FROM roles', (err, res) => {
                     inquirer
                         .prompt([
@@ -419,16 +444,17 @@ const updateRole = () => {
                             },
                         ])
                         .then((answer) => {
-                            console.log(answer)
+                           
 
                             let roleId = answer.role.split(".")[0]
-                            console.log(roleId)
+                           
+                            //Update the employee table with the new role for the employee.
                             connection.query(
                                 'UPDATE employee SET role_id=? WHERE id=?', [roleId, employeeId]
 
                                 , (err, res) => {
                                     if (err) throw err;
-                                    console.table("\x1b[34m", res)
+                                    console.log("\x1b[34m", 'Role updated!')
 
                                     runApp();
                                 }
@@ -448,10 +474,12 @@ const updateRole = () => {
 }
 
 
+//This function updates the employees manager.
 const updateManager = () => {
 
+    //Select from the employee table for a list of employees.
     connection.query('SELECT * FROM employee', (err, res) => {
-        console.log(res)
+    
         if (err) throw err;
         inquirer
             .prompt([
@@ -471,11 +499,10 @@ const updateManager = () => {
                 },
             ])
             .then((answer) => {
-                console.log(answer);
-
+                
                 let employId = answer.employee.split('. ')[0]
-                console.log(employId)
-
+                
+                //Select from the employee table to get a list employees.
                 connection.query('SELECT * FROM employee', (err, res) => {
                     inquirer
                         .prompt([
@@ -494,14 +521,15 @@ const updateManager = () => {
                         ])
                         .then((answer) => {
 
-                            console.log(answer)
+                            
                             let managerId = answer.manager.split(".")[0]
-                            console.log(managerId)
+                            
+                            //Update the employee table to set the manager id for the employee to their new manager based on the managers employee id.
                             connection.query(
                                 'UPDATE employee SET manager_id=? WHERE id=?', [managerId, employId]
                                 , (err, res) => {
                                     if (err) throw err;
-                                    console.table("\x1b[34m", res)
+                                    console.log("\x1b[34m", 'Manager was updated for the employee!')
 
                                     runApp();
                                 }
@@ -521,10 +549,12 @@ const updateManager = () => {
 }
 
 
-
+//This function deletes a department.
 const deleteDepartment = () => {
+
+    //Select list of departments from the table.
     connection.query('SELECT * FROM departments', (err, res) => {
-        console.log(res)
+       
         if (err) throw err;
         inquirer
             .prompt([
@@ -533,9 +563,9 @@ const deleteDepartment = () => {
                     type: 'list',
                     message: "Which department would you like to remove?",
                     choices() {
-                        console.log('Hi!')
+                        
                         const departArray = [];
-                        console.log(departArray)
+                        
                         res.forEach(({ id, department }) => {
                             departArray.push(id + '. ' + department);
                         });
@@ -544,12 +574,12 @@ const deleteDepartment = () => {
                 },
             ])
             .then((answer) => {
-                console.log(answer);
+                
 
                 let departmentId = answer.removedepart.split('. ')[0]
-                console.log(departmentId)
+                
 
-
+                //Delete selected department from the departments table based on id.
                 connection.query('DELETE FROM departments WHERE departments.id = ? ', [departmentId], (err, res) => {
                     if (err) throw err;
                     console.log("\x1b[31m", 'Department removed successfully!')
@@ -566,11 +596,12 @@ const deleteDepartment = () => {
 
 
 
-
+//Function to delete a role from the database.
 const deleteRole = () => {
 
+    //Select roles from roles database.
     connection.query('SELECT * FROM roles', (err, res) => {
-        console.log(res)
+        
         if (err) throw err;
         inquirer
             .prompt([
@@ -579,9 +610,9 @@ const deleteRole = () => {
                     type: 'list',
                     message: "Which role do you want to remove?",
                     choices() {
-                        console.log('Hi!')
+                        
                         const roleArray = [];
-                        console.log(roleArray)
+                        
                         res.forEach(({ id, title }) => {
                             roleArray.push(id + '. ' + title);
                         });
@@ -590,12 +621,11 @@ const deleteRole = () => {
                 },
             ])
             .then((answer) => {
-                console.log(answer);
+                
 
                 let roletId = answer.role.split('. ')[0]
-                console.log(roletId)
-
-
+                
+                //Deleted selected role from roles table based on it's id.
                 connection.query('DELETE FROM roles WHERE roles.id = ? ', [roletId], (err, res) => {
                     if (err) throw err;
                     console.log("\x1b[31m", 'Role removed successfully!')
@@ -611,21 +641,23 @@ const deleteRole = () => {
 
 }
 
+//Function to delete employees from database.
 const deleteEmployee = () => {
 
+    //Create list of employees by selecting employees from the employee table.
     connection.query('SELECT * FROM employee', (err, res) => {
-        console.log(res)
+        
         if (err) throw err;
         inquirer
             .prompt([
                 {
                     name: 'employee',
                     type: 'list',
-                    message: "Which role do you want to remove?",
+                    message: "Which employee do you want to remove?",
                     choices() {
-                        console.log('Hi!')
+                        
                         const employeeArray = [];
-                        console.log(employeeArray)
+                        
                         res.forEach(({ id, first_name, last_name }) => {
                             employeeArray.push(id + '. ' + first_name + ' ' + last_name);
                         });
@@ -634,12 +666,11 @@ const deleteEmployee = () => {
                 },
             ])
             .then((answer) => {
-                console.log(answer);
+                
 
                 let employeeId = answer.employee.split('. ')[0]
-                console.log(employeeId)
-
-
+               
+                //Delete selected employee from the employee table based on employee id.
                 connection.query('DELETE FROM employee WHERE employee.id = ? ', [employeeId], (err, res) => {
                     if (err) throw err;
                     console.log("\x1b[31m", 'Employee removed successfully!')
@@ -655,9 +686,10 @@ const deleteEmployee = () => {
 
 }
 
-//
+//View department budgets based on salaries.
 const budget = () => {
 
+    //Select the departments and the sum of each role in the department to view the total budget. Joining the department and roles table on the department id. 
     connection.query(
         'SELECT departments.department AS Department, SUM(salary) AS Budget FROM roles LEFT JOIN departments ON roles.department_id = departments.id GROUP BY departments.id', (err, res) => {
             if (err) throw err;
